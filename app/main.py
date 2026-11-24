@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Depends #deepend gives endpoint ready db session 
-from app.schemas.report import ReportCreate, ReportResponse
+from fastapi import FastAPI, HTTPException, Depends #deepend gives endpoint ready db session 
+from app.schemas.report import ReportCreate, ReportResponse, ReportUpdate 
 from sqlalchemy.orm import Session 
 from app.database import get_db 
 from app.models.report import Report 
@@ -34,3 +34,48 @@ def get_reports(db: Session = Depends(get_db)):
     reports = db.scalars(statement).all()
     return reports 
 
+@app.get("/reports/{report_id}", response_model=ReportResponse)
+def get_post(report_id: int, db: Session = Depends(get_db)):
+    report = db.get(Report, report_id) # find by key and can use object which is already in identity map
+    #without sending the additional sql request 
+    
+    if report is None: 
+        raise HTTPException(
+            status_code=404, 
+            detail="Report not found"
+        )
+    return report
+
+@app.delete("/reports/{report_id}", status_code=204)
+def delete_report(report_id: int, db: Session = Depends(get_db)):
+    report = db.get(Report, report_id)
+    
+    if report is None: 
+        raise HTTPException(
+            status_code=404, 
+            detail = "Report not found"
+        )
+    db.delete(report)
+    db.commit()
+    
+@app.patch("/reports/{report_id}", response_model=ReportResponse)
+def update_report(
+    report_id: int, 
+    data: ReportUpdate,
+    db: Session = Depends(get_db)
+):
+    report = db.get(Report, report_id)
+    
+    if report is None: 
+        raise HTTPException(
+            status_code=404, 
+            detail="Report not found"
+        )
+        
+    if data.status is not None: 
+        report.status = data.status
+        
+    db.commit()
+    db.refresh(report)
+    
+    return report 

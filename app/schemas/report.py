@@ -11,3 +11,8 @@ class ReportCreate(BaseModel):
 class ReportResponse(ReportCreate):
     id:int
     status:str 
+    
+    
+class ReportUpdate(BaseModel):
+    status: str | None = None 
+    
