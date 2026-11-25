@@ -1,5 +1,5 @@
-from fastapi import FastAPI, HTTPException, Depends #deepend gives endpoint ready db session 
-from app.schemas.report import ReportCreate, ReportResponse, ReportUpdate 
+from fastapi import FastAPI, HTTPException, Query, Depends #deepend gives endpoint ready db session 
+from app.schemas.report import ReportCreate, ReportResponse, ReportUpdate, ReportStatus
 from sqlalchemy.orm import Session 
 from app.database import get_db 
 from app.models.report import Report 
@@ -29,8 +29,25 @@ def post_report(report: ReportCreate, db:Session=Depends(get_db)):
     return new_report
 
 @app.get("/reports", response_model=list[ReportResponse])#return a list of reports 
-def get_reports(db: Session = Depends(get_db)):
+def get_reports(
+    status: ReportStatus | None = None, # None = None -> the parameter is not essential 
+    category: str | None = None,
+    limit: int = Query(default = 20, ge=1, le=100), 
+    offset: int = Query(default=0,ge=0),
+    db: Session = Depends(get_db)
+): 
     statement = select(Report)
+    
+    if status is not None: 
+        statement = statement.where(Report.status == status)
+        
+    if category is not None:
+        statement = statement.where(Report.category == category)
+    
+    statement = statement.order_by(Report.id)
+    statement = statement.limit(limit)
+    statement = statement.offset(offset)
+    
     reports = db.scalars(statement).all()
     return reports 
 
@@ -73,7 +90,7 @@ def update_report(
         )
         
     if data.status is not None: 
-        report.status = data.status
+        report.status = data.status.value #value takes enum value 
         
     db.commit()
     db.refresh(report)

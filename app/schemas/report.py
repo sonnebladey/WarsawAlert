@@ -1,4 +1,11 @@
 from pydantic import BaseModel, Field
+from enum import Enum
+
+
+class ReportStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
 
 
 class ReportCreate(BaseModel):
@@ -7,12 +14,11 @@ class ReportCreate(BaseModel):
     latitude: float = Field(ge=-90, le=90)
     longitude: float = Field(ge=-180, le=180)
     category: str
-    
+
 class ReportResponse(ReportCreate):
     id:int
     status:str 
-    
-    
+
+
 class ReportUpdate(BaseModel):
-    status: str | None = None 
-    
+    status: ReportStatus | None = None 
